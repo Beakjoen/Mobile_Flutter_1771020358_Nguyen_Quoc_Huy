@@ -54,11 +54,10 @@ flutter run
 |------------|--------------|--------|
 | **Web** (Edge/Chrome) | `http://localhost:5000/api` | API chạy trên cùng máy |
 | **Android Emulator** | `http://10.0.2.2:5000/api` | `10.0.2.2` = localhost của máy host từ trong emulator |
-| **iOS Simulator** | `http://localhost:5000/api` | dùng localhost khi API trên cùng máy |
-| **Máy thật (Android/iOS)** | Địa chỉ IP máy chạy API, ví dụ `http://192.168.1.x:5000/api` | Cần sửa trong `lib/services/api_base_url_io.dart` (hoặc file tương ứng) nếu deploy API trên máy khác |
+| **Máy thật (Android)** | Địa chỉ IP máy chạy API, ví dụ `http://192.168.1.x:5000/api` | Cần sửa trong `lib/services/api_base_url_io.dart` nếu deploy API trên máy khác |
 
 **File cấu hình trong project:**
-- **Android / iOS / desktop**: `Mobile/pcm_mobile/lib/services/api_base_url_io.dart` — Android dùng `10.0.2.2:5000`, còn lại dùng `localhost:5000`
+- **Android**: `Mobile/pcm_mobile/lib/services/api_base_url_io.dart` — dùng `10.0.2.2:5000` (emulator), hoặc IP máy chạy API khi cài APK lên máy thật
 - **Web**: `Mobile/pcm_mobile/lib/services/api_base_url_web.dart` — dùng `localhost:5000`
 
 **Khi deploy backend lên server:**  
