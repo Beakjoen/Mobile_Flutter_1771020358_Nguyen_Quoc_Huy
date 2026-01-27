@@ -16,6 +16,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _isLoading = true;
   int _monthlyBookings = 0;
   List<dynamic> _revenueData = [];
+  int _negativeBalanceCount = 0;
+  int _lowBalanceCount = 0;
 
   @override
   void initState() {
@@ -27,8 +29,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     try {
       final res = await _apiService.getAdminStats();
       setState(() {
-        _monthlyBookings = res.data['monthlyBookings'];
-        _revenueData = res.data['revenueChart'];
+        _monthlyBookings = res.data['monthlyBookings'] ?? 0;
+        _revenueData = res.data['revenueChart'] ?? [];
+        _negativeBalanceCount = res.data['negativeBalanceCount'] ?? 0;
+        _lowBalanceCount = res.data['lowBalanceCount'] ?? 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -52,6 +56,52 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Cảnh báo quỹ âm (PHẦN 1: Admin/Treasurer)
+                  if (_negativeBalanceCount > 0 || _lowBalanceCount > 0) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: _negativeBalanceCount > 0
+                            ? Colors.red.shade50
+                            : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _negativeBalanceCount > 0
+                              ? Colors.red
+                              : Colors.orange,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: _negativeBalanceCount > 0
+                                ? Colors.red
+                                : Colors.orange,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _negativeBalanceCount > 0
+                                  ? 'Cảnh báo quỹ âm: $_negativeBalanceCount hội viên có số dư âm.'
+                                  : 'Cảnh báo: $_lowBalanceCount hội viên số dư thấp (< 500k).',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: _negativeBalanceCount > 0
+                                    ? Colors.red.shade800
+                                    : Colors.orange.shade800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // Summary Cards
                   Row(
                     children: [
@@ -176,8 +226,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
-                                if (value < 0 || value >= _revenueData.length)
+                                if (value < 0 || value >= _revenueData.length) {
                                   return const SizedBox();
+                                }
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
                                   child: Text(

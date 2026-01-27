@@ -73,6 +73,8 @@ namespace PcmBackend.Controllers
                 );
 
                 var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == user.Id);
+                if (member != null)
+                    await SyncMemberTotalDepositAndTier(member);
 
                 return Ok(new
                 {
@@ -84,6 +86,7 @@ namespace PcmBackend.Controllers
                         member.RankLevel,
                         member.WalletBalance,
                         member.Tier,
+                        member.TotalDeposit,
                         member.AvatarUrl,
                         Email = user.Email,
                         PhoneNumber = user.PhoneNumber,
@@ -102,9 +105,11 @@ namespace PcmBackend.Controllers
             var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == userId);
             if (member == null) return NotFound();
 
+            await SyncMemberTotalDepositAndTier(member);
+
             var user = await _userManager.FindByIdAsync(userId!);
             var roles = await _userManager.GetRolesAsync(user!);
-            
+
             return Ok(new
             {
                 member.Id,
@@ -112,11 +117,23 @@ namespace PcmBackend.Controllers
                 member.RankLevel,
                 member.WalletBalance,
                 member.Tier,
+                member.TotalDeposit,
                 member.AvatarUrl,
                 Email = user?.Email,
                 PhoneNumber = user?.PhoneNumber,
                 Roles = roles
             });
+        }
+
+        /// <summary>Đồng bộ TotalDeposit và Tier từ lịch sử nạp đã duyệt — đảm bảo hạng và thanh tiến trình luôn đúng.</summary>
+        private async Task SyncMemberTotalDepositAndTier(Member member)
+        {
+            var totalDeposit = await _context.WalletTransactions
+                .Where(t => t.MemberId == member.Id && t.Type == TransactionType.Deposit && t.Status == TransactionStatus.Completed)
+                .SumAsync(t => t.Amount);
+            member.TotalDeposit = totalDeposit;
+            MemberTierHelper.UpdateTier(member);
+            await _context.SaveChangesAsync();
         }
     }
 

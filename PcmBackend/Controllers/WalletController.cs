@@ -48,6 +48,19 @@ namespace PcmBackend.Controllers
             return Ok(transaction);
         }
 
+        [HttpGet("transactions")]
+        public async Task<ActionResult<IEnumerable<WalletTransaction>>> GetTransactions()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == userId);
+            if (member == null) return NotFound();
+
+            return await _context.WalletTransactions
+                .Where(t => t.MemberId == member.Id)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
         [HttpGet("pending-deposits")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<dynamic>>> GetPendingDeposits()
@@ -85,12 +98,15 @@ namespace PcmBackend.Controllers
             if (member != null)
             {
                 member.WalletBalance += transaction.Amount;
+                member.TotalDeposit += transaction.Amount;
+                MemberTierHelper.UpdateTier(member);
             }
 
             await _context.SaveChangesAsync();
 
-            // Notify user via SignalR (Placeholder)
-            // if (member?.UserId != null) await _hubContext.Clients.User(member.UserId).SendAsync("ReceiveNotification", ...);
+            // PHẦN 4: Global Notify - Nạp tiền thành công broadcast tới User Id cụ thể
+            if (member?.UserId != null)
+                await _hubContext.Clients.User(member.UserId).SendAsync("ReceiveNotification", "Nạp tiền thành công. Số dư ví đã được cập nhật.");
 
             return Ok(transaction);
         }

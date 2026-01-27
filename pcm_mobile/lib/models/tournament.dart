@@ -6,7 +6,7 @@ class Tournament {
   final int format; // 0: Knockout, 1: RoundRobin
   final double entryFee;
   final double prizePool;
-  final int status; // 0: Open, 1: Ongoing, 2: Finished
+  final int status; // 0=Open, 1=Registering, 2=DrawCompleted, 3=Ongoing, 4=Finished
 
   Tournament({
     required this.id,

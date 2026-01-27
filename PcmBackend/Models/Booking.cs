@@ -32,5 +32,7 @@ namespace PcmBackend.Models
         public int? ParentBookingId { get; set; } // Self-referencing FK logic handled in business layer mostly
 
         public BookingStatus Status { get; set; } = BookingStatus.PendingPayment;
+
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
     }
 }

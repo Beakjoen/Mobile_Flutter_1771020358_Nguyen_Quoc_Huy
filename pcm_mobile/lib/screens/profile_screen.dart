@@ -3,17 +3,14 @@ import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final bool embedded;
 
-  @override
-  Widget build(BuildContext context) {
+  const ProfileScreen({super.key, this.embedded = false});
+
+  Widget _buildBody(BuildContext context) {
     final user = Provider.of<UserProvider>(context).member;
-
     if (user == null) return const Center(child: Text("Chưa đăng nhập"));
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ của tôi')),
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -141,7 +138,15 @@ class ProfileScreen extends StatelessWidget {
             )
           ],
         ),
-      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (embedded) return _buildBody(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Hồ sơ của tôi')),
+      body: _buildBody(context),
     );
   }
 

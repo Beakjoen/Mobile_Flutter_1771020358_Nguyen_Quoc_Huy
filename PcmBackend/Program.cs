@@ -65,6 +65,8 @@ builder.Services.AddControllers();
 
 // Register Hosted Services
 builder.Services.AddHostedService<TournamentCleanupService>();
+builder.Services.AddHostedService<BookingCleanupService>();
+builder.Services.AddHostedService<AutoRemindService>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();

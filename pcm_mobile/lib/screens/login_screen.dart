@@ -95,8 +95,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Mật khẩu',
                             prefixIcon: Icon(Icons.lock),
+                            hintText: 'Member@123 (tài khoản mẫu)',
                           ),
                           obscureText: true,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tài khoản mẫu từ DB: member1 … member20 / Member@123',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         SizedBox(

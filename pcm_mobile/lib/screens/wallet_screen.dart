@@ -6,16 +6,20 @@ import '../services/api_service.dart';
 import '../models/wallet_transaction.dart';
 
 class WalletScreen extends StatefulWidget {
-  const WalletScreen({super.key});
+  final bool embedded;
+
+  const WalletScreen({super.key, this.embedded = false});
 
   @override
   State<WalletScreen> createState() => _WalletScreenState();
 }
 
+/// 0: Nạp, 1: Trừ (Payment/Withdraw), 3: Hoàn tiền (Refund)
 class _WalletScreenState extends State<WalletScreen> {
   final ApiService _apiService = ApiService();
   List<WalletTransaction> _transactions = [];
   bool _isLoading = true;
+  int? _filterType; // null = Tất cả, 0 = Nạp, 1 = Trừ tiền, 3 = Hoàn tiền
 
   @override
   void initState() {
@@ -131,165 +135,164 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  List<WalletTransaction> get _filteredTransactions {
+    if (_filterType == null) return _transactions;
+    return _transactions.where((t) => t.type == _filterType).toList();
+  }
+
+  Widget _buildBody(BuildContext context) {
     final user = Provider.of<UserProvider>(context).member;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ví của tôi')),
-      body: _isLoading || user == null
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+    if (_isLoading || user == null) return const Center(child: CircularProgressIndicator());
+    final filtered = _filteredTransactions;
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          // Balance Card
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF38ef7d).withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Balance Card
-                Container(
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Số dư hiện tại', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                    Icon(Icons.account_balance_wallet, color: Colors.white),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '${user.walletBalance.toStringAsFixed(0)} đ',
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
                   width: double.infinity,
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                  child: ElevatedButton(
+                    onPressed: _showDepositDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF11998e),
+                      elevation: 0,
                     ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF38ef7d).withOpacity(0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Số dư hiện tại',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 16)),
-                          Icon(Icons.account_balance_wallet,
-                              color: Colors.white),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${user.walletBalance.toStringAsFixed(0)} đ',
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _showDepositDialog,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF11998e),
-                            elevation: 0,
-                          ),
-                          child: const Text('Nạp tiền'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Transactions Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Giao dịch gần đây',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      TextButton(
-                          onPressed: () {}, child: const Text('Xem tất cả')),
-                    ],
-                  ),
-                ),
-
-                // Transactions List
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _transactions.length,
-                    itemBuilder: (context, index) {
-                      final t = _transactions[index];
-                      // 0: Deposit, 1: Withdraw, 2: Payment, 3: Refund, 4: Reward
-                      final isPositive =
-                          t.type == 0 || t.type == 3 || t.type == 4;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                blurRadius: 5)
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isPositive
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.red.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isPositive
-                                    ? Icons.arrow_downward
-                                    : Icons.arrow_upward,
-                                color: isPositive ? Colors.green : Colors.red,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    t.description ?? 'Transaction',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
-                                  ),
-                                  Text(
-                                    t.createdDate.toString().split('.')[0],
-                                    style: const TextStyle(
-                                        color: Colors.grey, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              '${isPositive ? '+' : '-'}${t.amount.abs().toStringAsFixed(0)}',
-                              style: TextStyle(
-                                color: isPositive ? Colors.green : Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    child: const Text('Nạp tiền'),
                   ),
                 ),
               ],
             ),
+          ),
+          // Transactions Header + Filter
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Lịch sử giao dịch', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _filterChip('Tất cả', _filterType == null, () => setState(() => _filterType = null)),
+                      const SizedBox(width: 8),
+                      _filterChip('Nạp', _filterType == 0, () => setState(() => _filterType = 0)),
+                      const SizedBox(width: 8),
+                      _filterChip('Trừ tiền', _filterType == 1, () => setState(() => _filterType = 1)),
+                      const SizedBox(width: 8),
+                      _filterChip('Hoàn tiền', _filterType == 3, () => setState(() => _filterType = 3)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Transactions List
+          ...filtered.map((t) {
+            final isPositive = t.type == 0 || t.type == 3 || t.type == 4;
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 5)],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isPositive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isPositive ? Icons.arrow_downward : Icons.arrow_upward,
+                      color: isPositive ? Colors.green : Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.description ?? 'Giao dịch', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text(t.createdDate.toString().split('.')[0], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '${isPositive ? '+' : '-'}${t.amount.abs().toStringAsFixed(0)}',
+                    style: TextStyle(color: isPositive ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (filtered.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(child: Text('Không có giao dịch', style: TextStyle(color: Colors.grey.shade600))),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip(String label, bool selected, VoidCallback onTap) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.embedded) return _buildBody(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ví của tôi')),
+      body: _buildBody(context),
     );
   }
 }

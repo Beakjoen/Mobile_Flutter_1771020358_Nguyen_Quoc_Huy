@@ -18,14 +18,28 @@ class WalletTransaction {
   });
 
   factory WalletTransaction.fromJson(Map<String, dynamic> json) {
+    // Helper to safe parse date
+    DateTime parseDate(dynamic val) {
+      if (val == null) return DateTime.now();
+      String dateStr = val.toString();
+      // Handle .NET 7-digit precision by truncating to 6 (microseconds)
+      if (dateStr.contains('.')) {
+        int dotIndex = dateStr.indexOf('.');
+        if (dateStr.length - dotIndex > 7) {
+          dateStr = dateStr.substring(0, dotIndex + 7);
+        }
+      }
+      return DateTime.tryParse(dateStr) ?? DateTime.now();
+    }
+
     return WalletTransaction(
-      id: json['id'] ?? json['Id'],
-      memberId: json['memberId'] ?? json['MemberId'],
-      amount: ((json['amount'] ?? json['Amount']) as num).toDouble(),
-      type: json['type'] ?? json['Type'],
-      status: json['status'] ?? json['Status'],
-      description: json['description'] ?? json['Description'],
-      createdDate: DateTime.parse(json['createdDate'] ?? json['CreatedDate']),
+      id: json['id'] ?? json['Id'] ?? 0,
+      memberId: json['memberId'] ?? json['MemberId'] ?? 0,
+      amount: ((json['amount'] ?? json['Amount'] ?? 0) as num).toDouble(),
+      type: json['type'] ?? json['Type'] ?? 0,
+      status: json['status'] ?? json['Status'] ?? 0,
+      description: json['description'] ?? json['Description'] ?? '',
+      createdDate: parseDate(json['createdDate'] ?? json['CreatedDate']),
     );
   }
 }

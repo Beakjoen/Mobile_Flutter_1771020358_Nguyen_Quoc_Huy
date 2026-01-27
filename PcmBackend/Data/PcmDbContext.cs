@@ -19,6 +19,7 @@ namespace PcmBackend.Data
         public DbSet<Match> Matches { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<News> News { get; set; }
+        public DbSet<TransactionCategory> TransactionCategories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

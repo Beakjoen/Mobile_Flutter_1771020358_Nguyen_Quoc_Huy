@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using PcmBackend.Data;
 using PcmBackend.Models;
 
@@ -145,6 +146,71 @@ namespace PcmBackend.Services
                 );
                 await context.SaveChangesAsync();
             }
+
+            if (!context.Tournaments.Any(t => t.Name == "Autumn League"))
+            {
+                context.Tournaments.Add(new Tournament
+                {
+                    Name = "Autumn League",
+                    StartDate = DateTime.Now.AddDays(-3),
+                    EndDate = DateTime.Now.AddDays(7),
+                    Format = TournamentFormat.RoundRobin,
+                    EntryFee = 150000,
+                    PrizePool = 3000000,
+                    Status = TournamentStatus.Ongoing
+                });
+                await context.SaveChangesAsync();
+            }
+
+            // 6. Matches cho giải đã kết thúc (Summer Open) và đang diễn ra (Autumn League) - dữ liệu thật
+            var summer = await context.Tournaments.FirstOrDefaultAsync(t => t.Name == "Summer Open 2026");
+            if (summer != null && !context.Matches.Any(m => m.TournamentId == summer.Id))
+            {
+                var members = await context.Members.Where(m => m.FullName.StartsWith("Member")).Take(4).Select(m => m.Id).ToListAsync();
+                if (members.Count >= 4)
+                {
+                    var d = summer.EndDate.AddDays(-2).Date;
+                    context.Matches.AddRange(
+                        new Match { TournamentId = summer.Id, RoundName = "Vòng 1", Date = d, StartTime = TimeSpan.FromHours(9), Team1_Player1Id = members[0], Team2_Player1Id = members[1], Score1 = 2, Score2 = 1, WinningSide = WinningSide.Team1, Status = MatchStatus.Finished, IsRanked = true },
+                        new Match { TournamentId = summer.Id, RoundName = "Vòng 1", Date = d, StartTime = TimeSpan.FromHours(10), Team1_Player1Id = members[2], Team2_Player1Id = members[3], Score1 = 1, Score2 = 2, WinningSide = WinningSide.Team2, Status = MatchStatus.Finished, IsRanked = true },
+                        new Match { TournamentId = summer.Id, RoundName = "Bán kết", Date = d.AddDays(1), StartTime = TimeSpan.FromHours(9), Team1_Player1Id = members[0], Team2_Player1Id = members[3], Score1 = 2, Score2 = 0, WinningSide = WinningSide.Team1, Status = MatchStatus.Finished, IsRanked = true }
+                    );
+                    await context.SaveChangesAsync();
+                }
+            }
+
+            var autumn = await context.Tournaments.FirstOrDefaultAsync(t => t.Name == "Autumn League");
+            if (autumn != null && !context.Matches.Any(m => m.TournamentId == autumn.Id))
+            {
+                var members = await context.Members.Where(m => m.FullName.StartsWith("Member")).Skip(4).Take(4).Select(m => m.Id).ToListAsync();
+                if (members.Count >= 2)
+                {
+                    var d = DateTime.Now.Date.AddDays(1);
+                    context.Matches.AddRange(
+                        new Match { TournamentId = autumn.Id, RoundName = "Vòng bảng", Date = d, StartTime = TimeSpan.FromHours(14), Team1_Player1Id = members[0], Team2_Player1Id = members[1], Status = MatchStatus.Scheduled, IsRanked = true },
+                        new Match { TournamentId = autumn.Id, RoundName = "Vòng bảng", Date = d, StartTime = TimeSpan.FromHours(15), Team1_Player1Id = members.Count > 2 ? members[2] : members[0], Team2_Player1Id = members.Count > 3 ? members[3] : members[1], Status = MatchStatus.Scheduled, IsRanked = true }
+                    );
+                    await context.SaveChangesAsync();
+                }
+            }
+
+            // Tính TotalDeposit và Tier từ lịch sử nạp (member1 và mọi member có giao dịch nạp Completed)
+            var depositSums = await context.WalletTransactions
+                .Where(t => t.Type == TransactionType.Deposit && t.Status == TransactionStatus.Completed)
+                .GroupBy(t => t.MemberId)
+                .Select(g => new { MemberId = g.Key, Total = g.Sum(t => t.Amount) })
+                .ToListAsync();
+            foreach (var d in depositSums)
+            {
+                var member = await context.Members.FindAsync(d.MemberId);
+                if (member != null)
+                {
+                    member.TotalDeposit = d.Total;
+                    MemberTierHelper.UpdateTier(member);
+                }
+            }
+            if (depositSums.Count > 0)
+                await context.SaveChangesAsync();
         }
 
         private static async Task<IdentityUser?> CreateUser(UserManager<IdentityUser> userManager, string username, string password, string role)

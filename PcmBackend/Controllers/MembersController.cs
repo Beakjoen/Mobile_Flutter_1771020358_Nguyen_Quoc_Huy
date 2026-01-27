@@ -18,8 +18,24 @@ namespace PcmBackend.Controllers
             _context = context;
         }
 
+        /// <summary>Bảng xếp hạng theo tổng nạp (TotalDeposit). Dùng cho màn chính.</summary>
+        [HttpGet("leaderboard")]
+        public async Task<ActionResult<object>> GetLeaderboard([FromQuery] int top = 10)
+        {
+            var list = await _context.Members
+                .OrderByDescending(m => m.TotalDeposit)
+                .Take(Math.Clamp(top, 1, 50))
+                .Select(m => new { m.Id, m.FullName, m.TotalDeposit, m.Tier })
+                .ToListAsync();
+            return Ok(list);
+        }
+
+        /// <summary>PHẦN 3: GET /api/members - Danh sách members (Search, Filter, Pagination).</summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<dynamic>>> GetMembers([FromQuery] string? search)
+        public async Task<ActionResult<object>> GetMembers(
+            [FromQuery] string? search,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             var query = _context.Members
                 .Include(m => m.User)
@@ -30,9 +46,18 @@ namespace PcmBackend.Controllers
                 query = query.Where(m => m.FullName.Contains(search) || (m.User != null && m.User.Email.Contains(search)));
             }
 
-            var members = await query.ToListAsync();
+            var total = await query.CountAsync();
+            var members = await query
+                .OrderBy(m => m.FullName)
+                .Skip((page - 1) * pageSize)
+                .Take(Math.Min(pageSize, 100))
+                .ToListAsync();
 
-            return Ok(members.Select(m => new {
+            return Ok(new {
+                Total = total,
+                Page = page,
+                PageSize = pageSize,
+                Items = members.Select(m => new {
                 m.Id,
                 m.FullName,
                 m.RankLevel,
@@ -41,7 +66,8 @@ namespace PcmBackend.Controllers
                 m.AvatarUrl,
                 Email = m.User?.Email,
                 PhoneNumber = m.User?.PhoneNumber
-            }));
+            }).ToList()
+            });
         }
 
         [HttpGet("{id}")]

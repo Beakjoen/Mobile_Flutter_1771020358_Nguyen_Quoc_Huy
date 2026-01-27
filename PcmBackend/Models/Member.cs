@@ -27,6 +27,10 @@ namespace PcmBackend.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalSpent { get; set; } = 0;
 
+        /// <summary>Tổng tiền đã nạp (đã duyệt) — dùng cho xét hạng theo tỉ lệ nạp/chi.</summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalDeposit { get; set; } = 0;
+
         public string? AvatarUrl { get; set; }
     }
 }

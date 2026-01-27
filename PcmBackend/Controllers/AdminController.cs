@@ -8,7 +8,7 @@ namespace PcmBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Treasurer")]
     public class AdminController : ControllerBase
     {
         private readonly PcmDbContext _context;
@@ -54,11 +54,41 @@ namespace PcmBackend.Controllers
                 .OrderBy(x => DateTime.ParseExact(x.Month, "M/yyyy", null))
                 .ToList();
 
+            // 3. Cảnh báo quỹ âm (Admin/Treasurer) - PHẦN 1: "Quản lý dòng tiền Thu/Chi minh bạch. Cảnh báo quỹ âm"
+            var negativeBalanceCount = await _context.Members.CountAsync(m => m.WalletBalance < 0);
+            var lowBalanceCount = await _context.Members.CountAsync(m => m.WalletBalance >= 0 && m.WalletBalance < 500_000);
+
             return Ok(new
             {
                 MonthlyBookings = currentMonthBookings,
-                RevenueChart = revenueStatsSorted
+                RevenueChart = revenueStatsSorted,
+                NegativeBalanceCount = negativeBalanceCount,
+                LowBalanceCount = lowBalanceCount,
+                HasWalletWarning = negativeBalanceCount > 0 || lowBalanceCount > 0
             });
+        }
+
+        /// <summary>PHẦN 3: PUT /api/admin/wallet/approve/{transactionId} - Admin duyệt nạp tiền.</summary>
+        [HttpPut("wallet/approve/{transactionId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ApproveWalletDeposit(int transactionId)
+        {
+            var wt = await _context.WalletTransactions.FindAsync(transactionId);
+            if (wt == null) return NotFound();
+            if (wt.Status != TransactionStatus.Pending)
+                return BadRequest("Giao dịch đã được xử lý");
+
+            wt.Status = TransactionStatus.Completed;
+            wt.Description = "Nạp tiền vào ví (Thành công)";
+            var member = await _context.Members.FindAsync(wt.MemberId);
+            if (member != null)
+            {
+                member.WalletBalance += wt.Amount;
+                member.TotalDeposit += wt.Amount;
+                MemberTierHelper.UpdateTier(member);
+            }
+            await _context.SaveChangesAsync();
+            return Ok(wt);
         }
     }
 }
