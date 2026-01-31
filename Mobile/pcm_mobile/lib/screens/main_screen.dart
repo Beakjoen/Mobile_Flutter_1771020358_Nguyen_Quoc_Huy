@@ -123,6 +123,14 @@ class _MainScreenState extends State<MainScreen> {
                 _drawerTile(context, Icons.emoji_events, 'Giải đấu', 2),
                 _drawerTile(context, Icons.account_balance_wallet, 'Ví', 3),
                 _drawerTile(context, Icons.person, 'Cá nhân', 4),
+                ListTile(
+                  leading: const Icon(Icons.sports_martial_arts),
+                  title: const Text('Thách đấu'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/challenges');
+                  },
+                ),
                 if (u?.roles.contains('Admin') == true) ...[
                   const Divider(),
                   ListTile(

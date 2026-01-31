@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'api_base_url_io.dart' if (dart.library.html) 'api_base_url_web.dart' as _url;
+import 'api_base_url_io.dart' if (dart.library.html) 'api_base_url_web.dart' as url;
 
 class ApiService {
   final Dio _dio = Dio();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   // Backend port 5000. Web: localhost. Android emulator: 10.0.2.2
-  static String get baseUrl => _url.apiBaseUrl;
+  static String get baseUrl => url.apiBaseUrl;
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;
@@ -220,5 +220,44 @@ class ApiService {
   /// PHẦN 3: PUT /api/admin/wallet/approve/{transactionId}
   Future<Response> approveDepositAdmin(int transactionId) async {
     return await _dio.put('/admin/wallet/approve/$transactionId');
+  }
+
+  // Challenges (Thách đấu / Duel)
+  /// GET /api/challenges?filter=mine|open|finished
+  Future<Response> getChallenges({String? filter}) async {
+    return await _dio.get('/challenges', queryParameters: filter != null ? {'filter': filter} : null);
+  }
+
+  /// GET /api/challenges/{id}
+  Future<Response> getChallenge(int id) async {
+    return await _dio.get('/challenges/$id');
+  }
+
+  /// POST /api/challenges — stakeAmount, opponentId?, message?
+  Future<Response> createChallenge({
+    required double stakeAmount,
+    int? opponentId,
+    String? message,
+  }) async {
+    return await _dio.post('/challenges', data: {
+      'stakeAmount': stakeAmount,
+      if (opponentId != null) 'opponentId': opponentId,
+      if (message != null && message.isNotEmpty) 'message': message,
+    });
+  }
+
+  /// POST /api/challenges/{id}/accept
+  Future<Response> acceptChallenge(int id) async {
+    return await _dio.post('/challenges/$id/accept');
+  }
+
+  /// POST /api/challenges/{id}/result — body: { winnerId }
+  Future<Response> setChallengeResult(int id, {required int winnerId}) async {
+    return await _dio.post('/challenges/$id/result', data: {'winnerId': winnerId});
+  }
+
+  /// POST /api/challenges/{id}/cancel
+  Future<Response> cancelChallenge(int id) async {
+    return await _dio.post('/challenges/$id/cancel');
   }
 }

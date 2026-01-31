@@ -8,6 +8,7 @@ import 'screens/wallet_screen.dart';
 import 'screens/booking_screen.dart';
 import 'screens/tournament_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/challenges_screen.dart';
 
 void main() {
   runApp(
@@ -90,6 +91,7 @@ class MyApp extends StatelessWidget {
         '/booking': (context) => const BookingScreen(),
         '/tournaments': (context) => const TournamentScreen(),
         '/admin': (context) => const AdminDashboardScreen(),
+        '/challenges': (context) => const ChallengesScreen(),
       },
     );
   }

@@ -25,11 +25,27 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
+      final msg = Provider.of<UserProvider>(context, listen: false).lastLoginError
+          ?? 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')),
+        SnackBar(content: Text(msg)),
       );
+    }
+  }
+
+  /// Đăng nhập nhanh với tài khoản/mật khẩu gắn sẵn (cho người test).
+  void _quickLogin(String username, String password) async {
+    setState(() => _isLoading = true);
+    final success = await Provider.of<UserProvider>(context, listen: false)
+        .login(username, password);
+    setState(() => _isLoading = false);
+    if (!mounted) return;
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      final msg = Provider.of<UserProvider>(context, listen: false).lastLoginError
+          ?? 'Đăng nhập thất bại.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
@@ -81,7 +97,62 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Color(0xFF333333),
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Đăng nhập nhanh (tài khoản test gắn sẵn)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        if (_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else
+                          Column(
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _quickLogin('admin', 'Admin@123'),
+                                  icon: const Icon(Icons.admin_panel_settings, size: 22),
+                                  label: const Text('Đăng nhập Admin (admin / Admin@123)'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    backgroundColor: const Color(0xFF6200EE),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _quickLogin('member1', 'Member@123'),
+                                  icon: const Icon(Icons.person, size: 22),
+                                  label: const Text('Đăng nhập Thành viên (member1 / Member@123)'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    backgroundColor: const Color(0xFF3700B3),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         const SizedBox(height: 24),
+                        Divider(color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Hoặc đăng nhập bằng tài khoản khác',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         TextField(
                           controller: _usernameController,
                           decoration: const InputDecoration(
@@ -95,33 +166,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Mật khẩu',
                             prefixIcon: Icon(Icons.lock),
-                            hintText: 'Member@123 (tài khoản mẫu)',
                           ),
                           obscureText: true,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tài khoản mẫu từ DB: member1 … member20 / Member@123',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: _isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : ElevatedButton(
+                              ? const SizedBox.shrink()
+                              : OutlinedButton(
                                   onPressed: _login,
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
                                   ),
-                                  child: const Text('ĐĂNG NHẬP',
-                                      style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold)),
+                                  child: const Text('ĐĂNG NHẬP'),
                                 ),
                         ),
                       ],

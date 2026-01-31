@@ -17,6 +17,7 @@ namespace PcmBackend.Data
         public DbSet<Tournament> Tournaments { get; set; }
         public DbSet<TournamentParticipant> TournamentParticipants { get; set; }
         public DbSet<Match> Matches { get; set; }
+        public DbSet<Challenge> Challenges { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<News> News { get; set; }
         public DbSet<TransactionCategory> TransactionCategories { get; set; }
@@ -44,7 +45,21 @@ namespace PcmBackend.Data
                 .HasForeignKey(b => b.MemberId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Add more configurations as needed
+            builder.Entity<Challenge>()
+                .HasOne(c => c.Challenger)
+                .WithMany()
+                .HasForeignKey(c => c.ChallengerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Challenge>()
+                .HasOne(c => c.Opponent)
+                .WithMany()
+                .HasForeignKey(c => c.OpponentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Challenge>()
+                .HasOne(c => c.Winner)
+                .WithMany()
+                .HasForeignKey(c => c.WinnerId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

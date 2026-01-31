@@ -1,14 +1,24 @@
 # PCM - Pickleball Club Management (Mobile Edition)
 
+## Link sản phẩm online (đã deploy)
+
+- **Backend (Swagger):** https://nguyenquochuy.online/swagger  
+- **Backend (API):** https://nguyenquochuy.online/api  
+
+**App Mobile (Android):** Chưa có link tải APK. Clone repo này, cài Flutter + Android SDK, rồi build APK theo hướng dẫn bên dưới (phần **Build APK**). App trong repo đã cấu hình sẵn Base URL trỏ về backend tại **https://nguyenquochuy.online**.
+
+---
+
 ## Cấu trúc dự án
 - **Backend**: ASP.NET Core Web API — thư mục `Backend/PcmBackend`
 - **Mobile**: Ứng dụng Flutter — thư mục `Mobile/pcm_mobile`
 
 ## Yêu cầu
-- .NET SDK (8.0 trở lên, dự án dùng net10.0 nếu có)
-- Flutter SDK
-- SQL Server (LocalDB hoặc instance đầy đủ)
-- Entity Framework Core Tools: `dotnet tool install -g dotnet-ef`
+- .NET SDK 8.0 (cho Backend)
+- Flutter SDK (cho Mobile)
+- SQL Server (LocalDB hoặc instance đầy đủ — khi chạy Backend local)
+- Entity Framework Core Tools: `dotnet tool install -g dotnet-ef` (khi chạy Backend local)
+- Android SDK (khi build APK — cài qua Android Studio, set ANDROID_HOME)
 
 ---
 
@@ -48,39 +58,35 @@ flutter run
 
 ## Base URL API
 
-Ứng dụng Flutter dùng Base URL theo môi trường:
+**Bản trong repo (mặc định):** App Flutter đã cấu **Base URL = https://nguyenquochuy.online** (file `Mobile/pcm_mobile/lib/services/api_base_url_io.dart`). Clone và build APK là dùng được với backend đã deploy.
 
-| Môi trường | Base URL API | Ghi chú |
-|------------|--------------|--------|
-| **Web** (Edge/Chrome) | `http://localhost:5000/api` | API chạy trên cùng máy |
-| **Android Emulator** | `http://10.0.2.2:5000/api` | `10.0.2.2` = localhost của máy host từ trong emulator |
-| **Máy thật (Android)** | Địa chỉ IP máy chạy API, ví dụ `http://192.168.1.x:5000/api` | Cần sửa trong `lib/services/api_base_url_io.dart` nếu deploy API trên máy khác |
+| Môi trường | Base URL | Ghi chú |
+|------------|----------|--------|
+| **APK / máy thật (mặc định)** | `https://nguyenquochuy.online/api` | Backend đã deploy, dùng trực tiếp |
+| **Web** (Edge/Chrome) | `http://localhost:5000/api` | File `api_base_url_web.dart` — khi chạy API local |
+| **Chạy local khác** | Sửa `api_base_url_io.dart` | Ví dụ trỏ về `http://10.0.2.2:5000/api` (emulator) hoặc IP máy chạy API |
 
-**File cấu hình trong project:**
-- **Android**: `Mobile/pcm_mobile/lib/services/api_base_url_io.dart` — dùng `10.0.2.2:5000` (emulator), hoặc IP máy chạy API khi cài APK lên máy thật
-- **Web**: `Mobile/pcm_mobile/lib/services/api_base_url_web.dart` — dùng `localhost:5000`
-
-**Khi deploy backend lên server:**  
-Sửa Base URL trong các file trên trỏ về domain/thể hiện thật (ví dụ `https://api-pcm.example.com/api`).
+**File cấu hình:** `Mobile/pcm_mobile/lib/services/api_base_url_io.dart` (API + SignalR hub).
 
 ---
 
-## Build APK (Android) và kiểm tra trên máy thật
+## Build APK (Android)
 
+App trong repo đã trỏ về backend **https://nguyenquochuy.online**. Chỉ cần clone, cài Flutter + Android SDK, rồi build APK.
 
-**Build APK (release):**
+**Yêu cầu:** Flutter SDK, Android SDK (cài qua [Android Studio](https://developer.android.com/studio)). Set biến môi trường **ANDROID_HOME** trỏ tới thư mục Android SDK.
+
+**Build APK:**
 ```bash
 cd Mobile/pcm_mobile
 flutter pub get
-flutter build apk --release
+flutter build apk
 ```
 
-- File APK nằm tại: `build/app/outputs/flutter-apk/app-release.apk`
-- Copy file này lên máy Android và cài (cần bật “Cài từ nguồn không xác định” nếu có).
+- File APK: `Mobile/pcm_mobile/build/app/outputs/flutter-apk/app-release.apk`
+- Copy file này sang máy Android và cài (bật “Cài từ nguồn không xác định” nếu thiết bị yêu cầu).
 
-**Lưu ý khi chấm bài trên máy thật:**
-- Nếu Backend chạy trên máy giảng viên, cần đổi Base URL trong app thành IP máy đó (ví dụ `http://192.168.x.x:5000/api`) rồi build lại APK; hoặc
-- Chạy Backend và app trên **cùng một máy** (ví dụ máy ảo/emulator trỏ về `10.0.2.2` / `localhost` như bảng trên).
+**Chạy trên emulator / máy nối USB:** `flutter run` (chọn thiết bị khi được hỏi).
 
 ---
 

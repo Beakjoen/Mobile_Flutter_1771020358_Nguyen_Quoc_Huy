@@ -73,8 +73,10 @@ namespace PcmBackend.Controllers
                 );
 
                 var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == user.Id);
-                if (member != null)
-                    await SyncMemberTotalDepositAndTier(member);
+                if (member == null)
+                    return BadRequest("Tài khoản chưa được liên kết với hồ sơ thành viên. Liên hệ quản trị viên.");
+
+                await SyncMemberTotalDepositAndTier(member);
 
                 return Ok(new
                 {

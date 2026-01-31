@@ -70,4 +70,13 @@ namespace PcmBackend.Models
         Success,
         Warning
     }
+
+    /// <summary>Trạng thái kèo thách đấu (Duel).</summary>
+    public enum ChallengeStatus
+    {
+        Pending,   // Chờ đối thủ chấp nhận
+        Accepted,  // Đã chấp nhận, chờ đấu/kết quả
+        Finished,  // Đã có kết quả
+        Cancelled  // Đã hủy
+    }
 }

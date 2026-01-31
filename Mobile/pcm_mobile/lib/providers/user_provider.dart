@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/member.dart';
@@ -16,7 +17,12 @@ class UserProvider with ChangeNotifier {
 
   bool get isLoggedIn => _member != null;
 
+  String? _lastLoginError;
+
+  String? get lastLoginError => _lastLoginError;
+
   Future<bool> login(String username, String password) async {
+    _lastLoginError = null;
     try {
       final response = await _apiService.login(username, password);
       final token = response.data['token'];
@@ -29,10 +35,27 @@ class UserProvider with ChangeNotifier {
       
       notifyListeners();
       return true;
+    } on DioException catch (e) {
+      _lastLoginError = _messageFromDio(e);
+      return false;
     } catch (e) {
-      print(e);
+      _lastLoginError = e.toString();
       return false;
     }
+  }
+
+  static String _messageFromDio(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      if (data['detail'] != null) return data['detail'].toString();
+      if (data['message'] != null) return data['message'].toString();
+      if (data['title'] != null) return data['title'].toString();
+    }
+    if (data is String && data.isNotEmpty) return data;
+    if (e.response?.statusCode == 400) return 'Yêu cầu không hợp lệ';
+    if (e.response?.statusCode == 401) return 'Sai tên đăng nhập hoặc mật khẩu';
+    if (e.response?.statusCode != null && e.response!.statusCode! >= 500) return 'Lỗi máy chủ. Thử lại sau.';
+    return e.message ?? 'Đăng nhập thất bại';
   }
 
   Future<void> loadUser() async {

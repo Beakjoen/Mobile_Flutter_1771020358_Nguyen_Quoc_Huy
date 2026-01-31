@@ -1,6 +1,3 @@
-import 'dart:io' show Platform;
-
-String get apiBaseUrl =>
-    Platform.isAndroid ? 'http://10.0.2.2:5000/api' : 'http://localhost:5000/api';
-String get signalRHubUrl =>
-    Platform.isAndroid ? 'http://10.0.2.2:5000/pcmHub' : 'http://localhost:5000/pcmHub';
+// Production: backend đã deploy tại https://nguyenquochuy.online
+String get apiBaseUrl => 'https://nguyenquochuy.online/api';
+String get signalRHubUrl => 'https://nguyenquochuy.online/pcmHub';
